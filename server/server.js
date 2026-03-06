@@ -1,4 +1,7 @@
 // server.js — Express application entry point
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first'); // Force IPv4 (fixes email on Render)
+
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
