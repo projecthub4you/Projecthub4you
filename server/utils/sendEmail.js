@@ -1,45 +1,23 @@
-// utils/sendEmail.js — Email utility using Nodemailer (IPv4 forced for Render)
-const nodemailer = require('nodemailer');
-const dns = require('dns');
+// utils/sendEmail.js — Email utility using Resend (HTTP-based, works on all platforms)
+const { Resend } = require('resend');
 
 const sendEmail = async ({ to, subject, html }) => {
-    const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+    const resend = new Resend(process.env.RESEND_API_KEY);
 
-    // Manually resolve hostname to IPv4 address (fixes Render IPv6 issue)
-    let resolvedHost = smtpHost;
-    try {
-        const addresses = await dns.promises.resolve4(smtpHost);
-        if (addresses.length > 0) {
-            resolvedHost = addresses[0];
-            console.log(`SMTP: Resolved ${smtpHost} to IPv4: ${resolvedHost}`);
-        }
-    } catch (err) {
-        console.log(`SMTP: Could not resolve IPv4, using hostname: ${smtpHost}`);
-    }
-
-    const port = parseInt(process.env.SMTP_PORT) || 465;
-    const transporter = nodemailer.createTransport({
-        host: resolvedHost,
-        port,
-        secure: port === 465, // true for 465 (SSL), false for 587 (STARTTLS)
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-        },
-        tls: {
-            servername: smtpHost, // Required for TLS when connecting by IP
-            rejectUnauthorized: true,
-        },
-    });
-
-    const mailOptions = {
-        from: `"ProjectHub" <${process.env.SMTP_USER}>`,
-        to,
+    const { data, error } = await resend.emails.send({
+        from: 'ProjectHub <onboarding@resend.dev>',
+        to: [to],
         subject,
         html,
-    };
+    });
 
-    await transporter.sendMail(mailOptions);
+    if (error) {
+        console.error('Resend email error:', error);
+        throw new Error(error.message);
+    }
+
+    console.log('Email sent successfully via Resend:', data?.id);
+    return data;
 };
 
 module.exports = sendEmail;
