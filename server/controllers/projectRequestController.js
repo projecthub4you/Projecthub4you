@@ -129,7 +129,7 @@ exports.approveRequest = async (req, res) => {
         request.status = 'Approved';
         await request.save();
 
-        // Send approval email to student
+        // Send approval notification to admin (Resend free tier: can only send to verified email)
         try {
             const emailData = studentApprovalEmail({
                 studentName: request.userId.name,
@@ -139,8 +139,8 @@ exports.approveRequest = async (req, res) => {
                 deadline: request.deadline,
             });
             await sendEmail({
-                to: request.userId.email,
-                subject: emailData.subject,
+                to: process.env.SMTP_USER || 'projecthub4you@gmail.com',
+                subject: `Approved: ${request.userId.name} (${request.userId.email}) - ${emailData.subject}`,
                 html: emailData.html,
             });
         } catch (emailErr) {
